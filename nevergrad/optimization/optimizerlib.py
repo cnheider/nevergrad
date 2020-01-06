@@ -1514,21 +1514,31 @@ class NGO(base.Optimizer):
             self.has_noise = True
         self.fully_continuous = self.instrumentation.continuous
         self.has_discrete_not_softmax = "rderedDiscr" in str(self.instrumentation.variables)
-        if self.has_noise and self.has_discrete_not_softmax:
+        if self.has_noise and (self.has_discrete_not_softmax or self.instrumentation.is_nonmetrizable):
             # noise and discrete: let us merge evolution and bandits.
+            print("################### NOISE AND DISCRETE")
             self.optims = [DoubleFastGAOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
         else:
             if self.has_noise and self.fully_continuous:
+                print("################### NOISE AND CONTINUOUS")
                 # This is the real of population control. FIXME: should we pair with a bandit ?
-                self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
+                if self.instrumentation.is_nonmetrizable:
+                    print("################### NOISE AND CONTINUOUS BUT NON-METRIZABLE")
+                    self.optims = [RecombiningOptimisticNoisyDiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
+                else:
+                    print("################### NOISE AND CONTINUOUS AND METRIZABLE")
+                    self.optims = [TBPSA(self.instrumentation, budget, num_workers)]
             else:
                 if self.has_discrete_not_softmax or self.instrumentation.is_nonmetrizable or not self.fully_continuous:
+                    print("##################### NOISE NOT METRIZABLE")
                     self.optims = [DoubleFastGADiscreteOnePlusOne(self.instrumentation, budget, num_workers)]
                 else:
                     if num_workers > budget / 5:
                         if num_workers > budget / 2. or budget < self.dimension:
+                            print("############################# DOE")
                             self.optims = [MetaRecentering(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
+                            print("############################# parallel")
                             self.optims = [NaiveTBPSA(self.instrumentation, budget, num_workers)]  # noqa: F405
                     else:
                         # Possibly a good idea to go memetic for large budget, but something goes wrong for the moment.
@@ -1537,14 +1547,19 @@ class NGO(base.Optimizer):
                         # else
                         if num_workers == 1 and budget < self.dimension * 30:
                             if self.dimension > 30:  # One plus one so good in large ratio "dimension / budget".
+                                print("############################# high dim")
                                 self.optims = [OnePlusOne(self.instrumentation, budget, num_workers)]  # noqa: F405
                             else:
+                                print("############################# cobyla because budget not huge ")
                                 self.optims = [Cobyla(self.instrumentation, budget, num_workers)]  # noqa: F405
                         else:
                             if self.dimension > 2000:  # DE is great in such a case (?).
+                                print("################## DE because huge dim")
                                 self.optims = [DE(self.instrumentation, budget, num_workers)]  # noqa: F405
                             else:
+                                print("################## CMA because patato")
                                 self.optims = [CMA(self.instrumentation, budget, num_workers)]  # noqa: F405
+        print(self.optims)
 
     def _internal_ask_candidate(self) -> base.Candidate:
         optim_index = 0

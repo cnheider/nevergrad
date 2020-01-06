@@ -38,6 +38,7 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
         x for x, y in ng.optimizers.registry.items() if "andomSearch" in x or "PBIL" in x or "cGA" in x or
         ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
+    optims = ["NGO"]
     functions = [
         ArtificialFunction(name, block_dimension=bd, num_blocks=n_blocks, useless_variables=bd * uv_factor * n_blocks)
         for name in names
@@ -47,7 +48,7 @@ def discrete2(seed: Optional[int] = None) -> Iterator[Experiment]:
     ]
     for func in functions:
         for optim in optims:
-            for nw in [1, 10]:
+            for nw in [1]:  #, 10]:
                 for budget in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700,
                                1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]:  # , 10000]:
                     yield Experiment(func, optim, budget=budget, num_workers=nw, seed=next(seedg))
@@ -62,6 +63,7 @@ def discrete(seed: Optional[int] = None) -> Iterator[Experiment]:
         x for x, y in ng.optimizers.registry.items()
         if "andomSearch" in x or ("iscrete" in x and "epea" not in x and "DE" not in x and "SSNEA" not in x)
     )
+    optims = ["NGO"]
     # Block dimension = dimension of a block on which the function "name" is applied. There are several blocks,
     # and possibly useless variables; so the total dimension is num_blocks * block_dimension * (1+ uv_factor).
     functions = [
@@ -218,7 +220,7 @@ def yabbob(seed: Optional[int] = None, parallel: bool = False, big: bool = False
         for num_blocks in [1]
         for d in ([100, 1000, 3000] if hd else [2, 10, 50])
     ]
-    for optim in optims:
+    for optim in ["NGO"]:  #optims:
         for function in functions:
             for budget in [50, 200, 800, 3200, 12800] if (not big and not noise) else [40000, 80000]:
                 xp = Experiment(function, optim, num_workers=100 if parallel else 1,
@@ -518,6 +520,7 @@ def fastgames(seed: Optional[int] = None) -> Iterator[Experiment]:
     algos = ["NaiveTBPSA", "ScrHammersleySearch", "PSO", "OnePlusOne",
              "CMA", "TwoPointsDE", "QrDE", "LhsDE", "Zero", "StupidRandom", "RandomSearch", "HaltonSearch",
              "RandomScaleRandomSearch", "MiniDE", "SplitOptimizer5", "NGO"]
+    algos = ["NGO"]
     for budget in [1600, 3200, 6400, 12800]:
         for num_workers in [1, 10, 100]:
             if num_workers < budget:
